@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tridomino2"
+dynamic = ["version"]
+description = 'Working with tridominos'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Joe Moore", email = "joe.moore@siemens.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "click",
+]
+
+[project.urls]
+Documentation = "https://github.com/Joe Moore/tridomino2#readme"
+Issues = "https://github.com/Joe Moore/tridomino2/issues"
+Source = "https://github.com/Joe Moore/tridomino2"
+
+[project.scripts]
+tridomino2 = "tridomino2.cli:tridomino2"
+
+[tool.hatch.version]
+path = "src/tridomino2/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/tridomino2 tests}"
+
+[tool.coverage.run]
+source_pkgs = ["tridomino2", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/tridomino2/__about__.py",
+]
+
+[tool.coverage.paths]
+tridomino2 = ["src/tridomino2", "*/tridomino2/src/tridomino2"]
+tests = ["tests", "*/tridomino2/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
