@@ -1,32 +1,60 @@
 from dataclasses import dataclass
-from pprint import pprint
+from itertools import chain, product 
+
+import click
+
 
 class GameBoard:
-    nRows: int
-    nCols: int
+    board: list[list[str]]
+    gamerows: int
+    gamecols: int
     empty: str
 
-    def __init__(self, nRows = 6, nCols = 6, *, empty=" ", initial=None):
-        self.nRows = nRows
-        self.nCols = nCols
+    def _north(self, r: int,c: int) -> tuple[int, int]:
+            return r-1,c
+    def _south(self, r: int,c: int) -> tuple[int, int]:
+            return r-1,c
+    def _east(self, r: int,c: int) -> tuple[int, int]:
+            return r-1,c
+    def _west(self, r: int,c: int) -> tuple[int, int]:
+            return r-1,c
+
+    def __init__(self, gamerows = 6, gamecols = 6, *, empty=" ", initial=None):
+        self.gamerows = gamerows
+        self.gamecols = gamecols
         self.empty = empty
         if initial is None:
-            self.board = [ [ empty for _ in range(nCols)] for _ in range(nRows)]
+            self.board = [
+                [ '*' for _ in range(gamecols+2) ], # First row border
+               * [ [ empty for _ in range(gamecols+2)] for _ in range(gamerows)],
+                [ '*' for _ in range(gamecols+2) ] # Last row border
+            ]
+            for r in range(gamerows+2):
+                self.board[r][0] = '*'
+                self.board[r][gamecols+1] = '*'
         else:
-            self.board = [ [ initial[i][j] for j in range(nCols) ] for i in range(nRows) ]
-            
-    def __str__(self):
-        return '\n'.join([
-            f'+{"-+" * self.nCols}',
-            * [ (f'|{"|".join(r)}|') for r in self.board],
-            f'+{"-+" * self.nCols}'
-        ])
+            self.board = [ [ initial[i][j] for j in range(gamecols+2) ] for i in range(gamerows+2) ]
 
-    def set(self, rpos, cpos, value='x'):
-        self.board[rpos][cpos] = value
+    def __str__(self) -> str:
+        return '\n'.join( [ (f'{"".join(r)}') for r in self.board])
+    
+    def __repr__(self) -> str:
+        return str( (self.gamerows, self.gamecols, ''.join(chain(*self.board))) )
 
-    def place(self, dom: "domino"):
-        nb = GameBoard(self.nRows, self.nCols,initial=self.board)
+    def set(self, rpos:int, cpos:int, value:str ='x') -> None:
+        assert(rpos < self.gamerows and cpos < self.gamecols)
+        assert(self.board[rpos+1][cpos+1]) == self.empty
+        if rpos <= self.gamerows and cpos <= self.gamecols:
+            self.board[rpos+1][cpos+1] = value
+
+    def get(self, d: tuple[int,int]) -> str|None:
+        assert(d[0] < self.gamerows+1 and d[1] < self.gamecols+1)
+        if d[0] <= self.gamerows and d[1] <= self.gamecols:
+            return self.board[d[0]+1][d[1]+1]
+        return '*'
+
+    def place(self, dom: "domino") -> "GameBoard":
+        nb = GameBoard(self.gamerows, self.gamecols,initial=self.board)
         if dom.orientation == "H":
             nb.set(dom.r,dom.c,'>')
             nb.set(dom.r,dom.c+1,'<')
@@ -35,18 +63,37 @@ class GameBoard:
             nb.set(dom.r+1,dom.c,'^')
         return nb
 
-    def places(self):
-        for i in range(self.nRows):
-            for j in range(self.nCols-1):
-                if self.board[i][j] == self.empty and self.board[i][j+1] == self.empty:
-                        yield domino(i,j,'H')
-        for i in range(self.nRows-1):
-            for j in range(self.nCols):
-                if self.board[i][j] == self.empty and self.board[i+1][j] == self.empty:
-                        yield domino(i,j,'V')
+    def places(self) -> "domino":
+        for row,col,o in product(range(self.gamerows),range(self.gamecols), ['H','V']):
+            d = domino(row,col,o)
+            pr, pc = d.partner()
 
-    def is_tridomino(self):
-        return False
+            # Are the domino locations empty?
+            if self.get((d.r, d.c)) != self.empty or self.get((pr, pc)) != self.empty:
+                continue
+            
+            # a domino is connected if the (pre-)existing board has a domino to the north, south, west or east of either
+            # its location, or the partner location
+            if self.get(self._north(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+                yield d
+            elif self.get(self._south(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+                yield d
+            elif self.get(self._east(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+                yield d
+            elif self.get(self._west(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+                yield d
+
+            # Could have an empty board
+            elif all([self.board[row][col] == self.empty for r,c in product(range(self.gamerows),range(self.gamecols))]):
+                yield d
+
+
+    def is_tridomino(self) -> bool:
+        # A tridomino has exactly 3 dominos, and all cells are connected by edges
+        cells = [ x for x in chain(*self.board) if x in ['V','>'] ]
+        if len(cells) != 3:
+            return False
+        return True
 
 @dataclass
 class domino:
@@ -54,7 +101,15 @@ class domino:
     c: int
     orientation: str
 
+    def partner(self) -> tuple[int, int]:
+        if self.orientation == "H":
+            return self.r, self.c+1
+        if self.orientation == "V":
+            return self.r+1, self.c
+        return None
+
 found = set()
+nFound = 0
 
 if __name__ == "__main__":
     b = GameBoard(2,4)
@@ -64,12 +119,12 @@ if __name__ == "__main__":
             b2 = b1.place(p2)
             for p3 in b2.places():
                 b3 = b2.place(p3)
-                if repr(b3.board) in found:
+                if repr(b3) in found:
                     pass
                 else:
-                    print(b3)
-                    found.add(repr(b3.board))
-
+                    click.echo(f'\nBoard {nFound}:\n{b3}')
+                    found.add(repr(b3))
                     if b3.is_tridomino():
-                        print(f'FOUND A TRIDOMINO CONFIG')
-    print(f'Found a total of {len(found)} distinct boards')
+                        nFound += 1
+                        click.echo('FOUND A TRIDOMINO CONFIG')
+    click.echo(f'Considered a total of {len(found)} distinct boards, with {nFound} from tridominos')
