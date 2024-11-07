@@ -35,6 +35,19 @@ class GameBoard:
         else:
             self.board = [ [ initial[i][j] for j in range(gamecols+2) ] for i in range(gamerows+2) ]
 
+    @dataclass
+    class gamepos:
+        row: int
+        col: int
+
+    def _occupied(self, p: gamepos) -> bool|None:
+        if self.board[p.row+1][p.col+1] == self.empty:
+            return False
+        if self.board[p.row+1][p.col+1] != '*':
+            return True
+    def occupied(self, r:int, c:int) -> bool|None:
+        return self._occupied(self.gamepos(r,c))
+
     def __str__(self) -> str:
         return '\n'.join( [ (f'{"".join(r)}') for r in self.board])
     
@@ -43,7 +56,7 @@ class GameBoard:
 
     def set(self, rpos:int, cpos:int, value:str ='x') -> None:
         assert(rpos < self.gamerows and cpos < self.gamecols)
-        assert(self.board[rpos+1][cpos+1]) == self.empty
+        assert(self.occupied(rpos,cpos) == False)
         if rpos <= self.gamerows and cpos <= self.gamecols:
             self.board[rpos+1][cpos+1] = value
 
@@ -76,11 +89,11 @@ class GameBoard:
             # its location, or the partner location
             if self.get(self._north(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
                 yield d
-            elif self.get(self._south(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+            elif self.get(self._south(d.r, d.c)) != self.empty or self.get(self._south(pr, pc)) != self.empty:
                 yield d
-            elif self.get(self._east(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+            elif self.get(self._east(d.r, d.c)) != self.empty or self.get(self._east(pr, pc)) != self.empty:
                 yield d
-            elif self.get(self._west(d.r, d.c)) != self.empty or self.get(self._north(pr, pc)) != self.empty:
+            elif self.get(self._west(d.r, d.c)) != self.empty or self.get(self._west(pr, pc)) != self.empty:
                 yield d
 
             # Could have an empty board
@@ -126,5 +139,5 @@ if __name__ == "__main__":
                     found.add(repr(b3))
                     if b3.is_tridomino():
                         nFound += 1
-                        click.echo('FOUND A TRIDOMINO CONFIG')
+                        click.echo('FOUND A 3-DOMINO CONFIG')
     click.echo(f'Considered a total of {len(found)} distinct boards, with {nFound} from tridominos')
