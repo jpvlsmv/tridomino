@@ -54,6 +54,20 @@ class GameBoard:
 
     def __repr__(self) -> str:
         return str( (self.gamerows, self.gamecols, ''.join(chain(*self.board))) )
+    
+    def T(self):
+        tb = GameBoard(self.gamecols, self.gamerows, empty=self.empty)
+        for r,c in product(range(self.gamerows), range(self.gamecols)):
+            tb.set(c,r, self.get(r,c))
+        return tb
+
+    def characterize(self) -> str:
+        # Trim off all blank rows and columns
+        # Compare board to its symmetries, and return the lexicographically first
+        # I, T, R90, R180, R270, TR90, TR180, TR270
+        I = repr(self)
+        T = repr(self.T())
+        return min([I,T])
 
     def set(self, rpos:int, cpos:int, value:str ='x') -> None:
         assert (0 <= rpos < self.gamerows)
@@ -135,11 +149,11 @@ if __name__ == "__main__":
             boardwith2 = boardwith1.place(dom2)
             for dom3 in list(boardwith2.places()):
                 boardwith3 = boardwith2.place(dom3)
-                if repr(boardwith3) in found:
+                if boardwith3.characterize() in found:
                     pass
                 else:
                     click.echo(f'\nBoard {nfound}:\n{boardwith3}')
-                    found.add(repr(boardwith3))
+                    found.add(boardwith3.characterize())
                     if boardwith3.is_tridomino():
                         nfound += 1
                         click.echo('FOUND A 3-DOMINO CONFIG')
