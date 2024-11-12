@@ -48,13 +48,13 @@ class GameBoard:
     def occupied(self, r:int, c:int) -> bool:
         """ occupied cells have either a domino or partner, (not wall) """
         return self._occupied(self.GamePos(r,c))
-    
+
     def __str__(self) -> str:
         return '\n'.join( [ (f'{"".join(r)}') for r in self.board])
 
     def __repr__(self) -> str:
         return str( (self.gamerows, self.gamecols, ''.join(chain(*self.board))) )
-    
+
     def T(self):
         tb = GameBoard(self.gamecols, self.gamerows, empty=self.empty)
         for r,c in product(range(self.gamerows), range(self.gamecols)):
@@ -103,7 +103,7 @@ class GameBoard:
             # Are the domino locations available?
             if not (self.available(d.r, d.c) and self.available(pr, pc)):
                 continue
-            
+
             if blankboard or self.connected(d):
                 yield d
 
