@@ -56,6 +56,12 @@ class GameBoard:
     def __repr__(self) -> str:
         return str( (self.gamerows, self.gamecols, ''.join(chain(*self.board))) )
 
+    def show(self) -> str:
+        print("+", "+".join(["-" for _ in range(self.gamecols)]), "+")
+        for r in self.board:
+            print("|", " ".join(r), "|")
+        print("+", "+".join(["-" for _ in range(self.gamecols)]), "+")
+
     def T(self):
         tb = GameBoard(self.gamecols, self.gamerows, empty=self.empty)
         for r,c in product(range(self.gamerows), range(self.gamecols)):
@@ -65,35 +71,60 @@ class GameBoard:
             elif p == '<': pT = '^'
             elif p == 'V': pT = '>'
             elif p == '^': pT = '<'
+            else: pT = p
             tb.set(c,r, pT)
         return tb
+
+    def R90(self):
+        tb = GameBoard(self.gamecols, self.gamerows, empty=self.empty)
+        for r,c in product(range(self.gamerows), range(self.gamecols)):
+            p = self.get(r,c)
+            pR = ' '
+            if p == '>': pR = '^'
+            elif p == '<': pR = 'v'
+            elif p == 'V': pR = '>'
+            elif p == '^': pR = '<'
+            else: pR = p
+            tb.set(tb.gamerows-1-c, r, pR)
+        return tb
+
+    def R180(self):
+        t1 = self.R90()
+        print(f"{t1!r}")
+        t2 = t1.R90()
+        print(f"{t2!r}")
+        return t2
+
+    def R270(self):
+        return self.R90().R90().R90()
+
 
     def characterize(self) -> str:
         # Trim off all blank rows and columns
         b = GameBoard(self.gamerows, self.gamecols, initial=self.board)
-        click.echo(f'initial board is {repr(b)}')
+        click.echo(f'initial board is {b!r}')
         while all([b.available(0,c) for c in range(b.gamecols)]):
             # Remove empty row from top of board
             b.board.pop(0)
             b.gamerows -= 1
-            click.echo(f'trimmed board is {repr(b)}')
+            click.echo(f'trimmed board is {b!r}')
         while all([b.available(b.gamerows-1,c) for c in range(b.gamecols)]):
             # Remove empty row from bottom of board
             b.board.pop()
             b.gamerows -= 1
-            click.echo(f'trimmed board is {repr(b)}')
+            click.echo(f'trimmed board is {b!r}')
         while all([b.available(r,0) for r in range(b.gamerows)]):
             # Remove empty column from left side
             for r in range(b.gamerows):
                 b.board[r] = b.board[r][1:]
             b.gamecols -= 1
-            click.echo(f'trimmed board is {repr(b)}')
+            click.echo(f'trimmed board is {b!r}')
         while all([b.available(r,b.gamecols-1) for r in range(b.gamerows)]):
             # Remove empty column from right side
             for r in range(b.gamerows):
                 b.board[r] = b.board[r][:-1]
             b.gamecols -= 1
-            click.echo(f'trimmed board is {repr(b)}')
+            click.echo(f'trimmed board is {b!r}')
         # Compare board to its symmetries, and return the lexicographically first
         # I, T, R90, R180, R270, TR90, TR180, TR270
         identity = repr(b)
@@ -181,9 +212,9 @@ if __name__ == "__main__":
             boardwith2 = boardwith1.place(dom2)
             for dom3 in list(boardwith2.places()):
                 boardwith3 = boardwith2.place(dom3)
-                click.echo(f'board {repr(boardwith3)} characterizes to {boardwith3.characterize()}')
+                click.echo(f'board {boardwith3!r} characterizes to {boardwith3.characterize()}')
                 if boardwith3.characterize() in found:
-                    click.echo(f'{repr(boardwith3)} already seen')
+                    click.echo(f'{boardwith3!r} already seen')
                 else:
                     click.echo(f'\nBoard {nfound}:\n{boardwith3}')
                     found.add(boardwith3.characterize())
