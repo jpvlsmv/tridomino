@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import chain, product
-from typing import Generator
+from typing import Generator, Optional
+from pprint import pprint
 
 import click
+from parse import parse
 
 
 class GameBoard:
@@ -22,14 +24,21 @@ class GameBoard:
     def _west(self, r: int,c: int) -> tuple[int, int]:
             return r,c-1
 
-    def __init__(self, gamerows = 6, gamecols = 6, *, empty=" ", initial=None):
-        self.gamerows = gamerows
-        self.gamecols = gamecols
-        self.empty = empty
-        if initial is None:
-            self.board = [ [ empty for _ in range(gamecols)] for _ in range(gamerows)]
+    def __init__(self, gamerows:int = 6, gamecols:int = 6, *, empty:str=" ", initial:Optional(str)=None, stringrep:Optional(str)=None):
+        if stringrep is None:
+            self.gamerows = gamerows
+            self.gamecols = gamecols
+            self.empty = empty
+            if initial is None:
+                self.board = [ [ empty for _ in range(gamecols)] for _ in range(gamerows)]
+            else:
+                self.board = [ [ initial[i][j] for j in range(gamecols) ] for i in range(gamerows) ]
         else:
-            self.board = [ [ initial[i][j] for j in range(gamecols) ] for i in range(gamerows) ]
+            (r, c, bd) = parse("({:d}, {:d}, '{}')", stringrep)
+            self.gamerows = r
+            self.gamecols = c
+            self.empty = empty
+            self.board = [ [ bd[colidx + c * rowidx] for colidx in range(c) ] for rowidx in range(r) ]
 
     @dataclass
     class GamePos:
@@ -45,7 +54,7 @@ class GameBoard:
         return self._available(self.GamePos(r,c))
 
     def _occupied(self, p:GamePos) -> bool:
-        return self.get(p.row,p.col) in [ 'V', '^', '<', '>' ]
+        return self.get(p.row,p.col) in [ 'v', '^', '<', '>' ]
     def occupied(self, r:int, c:int) -> bool:
         """ occupied cells have either a domino or partner, (not wall) """
         return self._occupied(self.GamePos(r,c))
@@ -56,81 +65,90 @@ class GameBoard:
     def __repr__(self) -> str:
         return str( (self.gamerows, self.gamecols, ''.join(chain(*self.board))) )
 
-    def show(self) -> str:
-        print("+", "+".join(["-" for _ in range(self.gamecols)]), "+")
+    def show(self) -> None:
+        click.echo("+" + "+".join(["-" for _ in range(self.gamecols)]) + "+")
         for r in self.board:
-            print("|", " ".join(r), "|")
-        print("+", "+".join(["-" for _ in range(self.gamecols)]), "+")
+            click.echo("|" + " ".join(r) + "|")
+        click.echo("+" + "+".join(["-" for _ in range(self.gamecols)]) + "+")
 
-    def T(self):
+    def transpose(self):
         tb = GameBoard(self.gamecols, self.gamerows, empty=self.empty)
         for r,c in product(range(self.gamerows), range(self.gamecols)):
             p = self.get(r,c)
-            pT = ' '
-            if p == '>': pT = 'V'
-            elif p == '<': pT = '^'
-            elif p == 'V': pT = '>'
-            elif p == '^': pT = '<'
-            else: pT = p
-            tb.set(c,r, pT)
+            pt = ' '
+            if p == '>':
+                pt = 'v'
+            elif p == '<':
+                pt = '^'
+            elif p == 'v':
+                pt = '>'
+            elif p == '^':
+                pt = '<'
+            else:
+                pt = p
+            tb.set(c,r, pt)
         return tb
 
-    def R90(self):
+    def rotate90(self):
         tb = GameBoard(self.gamecols, self.gamerows, empty=self.empty)
         for r,c in product(range(self.gamerows), range(self.gamecols)):
             p = self.get(r,c)
-            pR = ' '
-            if p == '>': pR = '^'
-            elif p == '<': pR = 'v'
-            elif p == 'V': pR = '>'
-            elif p == '^': pR = '<'
-            else: pR = p
-            tb.set(tb.gamerows-1-c, r, pR)
+            pr = ' '
+            if p == '>':
+                pr = '^'
+            elif p == '<':
+                pr = 'v'
+            elif p == 'v':
+                pr = '>'
+            elif p == '^':
+                pr = '<'
+            else:
+                pr = p
+            tb.set(tb.gamerows-1-c, r, pr)
         return tb
 
-    def R180(self):
-        t1 = self.R90()
-        print(f"{t1!r}")
-        t2 = t1.R90()
-        print(f"{t2!r}")
-        return t2
+    def rotate180(self):
+        return self.rotate90().rotate90()
 
-    def R270(self):
-        return self.R90().R90().R90()
+    def rotate270(self):
+        return self.rotate90().rotate90().rotate90()
 
 
     def characterize(self) -> str:
         # Trim off all blank rows and columns
         b = GameBoard(self.gamerows, self.gamecols, initial=self.board)
-        click.echo(f'initial board is {b!r}')
         while all([b.available(0,c) for c in range(b.gamecols)]):
             # Remove empty row from top of board
             b.board.pop(0)
             b.gamerows -= 1
-            click.echo(f'trimmed board is {b!r}')
         while all([b.available(b.gamerows-1,c) for c in range(b.gamecols)]):
             # Remove empty row from bottom of board
             b.board.pop()
             b.gamerows -= 1
-            click.echo(f'trimmed board is {b!r}')
         while all([b.available(r,0) for r in range(b.gamerows)]):
             # Remove empty column from left side
             for r in range(b.gamerows):
                 b.board[r] = b.board[r][1:]
             b.gamecols -= 1
-            click.echo(f'trimmed board is {b!r}')
         while all([b.available(r,b.gamecols-1) for r in range(b.gamerows)]):
             # Remove empty column from right side
             for r in range(b.gamerows):
                 b.board[r] = b.board[r][:-1]
             b.gamecols -= 1
-            click.echo(f'trimmed board is {b!r}')
         # Compare board to its symmetries, and return the lexicographically first
         # I, T, R90, R180, R270, TR90, TR180, TR270
-        identity = repr(b)
-        translate = repr(b.T())
-        click.echo(f'Translated board is {translate}')
-        return min([identity,translate])
+        translate = b.transpose()
+        i = repr(b)
+        t = repr(translate)
+        r90 = repr(b.rotate90())
+        r180 = repr(b.rotate180())
+        r270 = repr(b.rotate270())
+        t90 = repr(translate.rotate90())
+        t180 = repr(translate.rotate180())
+        t270 = repr(translate.rotate270())
+#        for c in [i,t,r90,r180,r270,t90,t180,t270]:
+#            GameBoard(0,0,stringrep=c).show()
+        return max([i,t,r90,r180,r270,t90,t180,t270])
 
     def set(self, rpos:int, cpos:int, value:str ='x') -> None:
         assert (0 <= rpos < self.gamerows)
@@ -152,8 +170,8 @@ class GameBoard:
         if dom.orientation == "H":
             nb.set(dom.r,dom.c,'>')
             nb.set(dom.r,dom.c+1,'<')
-        if dom.orientation == "V":
-            nb.set(dom.r,dom.c,'V')
+        else: # if dom.orientation == "V":
+            nb.set(dom.r,dom.c,'v')
             nb.set(dom.r+1,dom.c,'^')
         return nb
 
@@ -183,8 +201,8 @@ class GameBoard:
         return False
 
     def is_tridomino(self) -> bool:
-        # A tridomino has exactly 3 dominos, and all cells are connected by edges
-        cells = [ x for x in chain(*self.board) if x in ['V','>'] ]
+        # Since I'm only creating connected positions, we only check for number of doms
+        cells = [ x for x in chain(*self.board) if x in ['v','>'] ]
         if len(cells) != 3:
             return False
         return True
@@ -198,27 +216,38 @@ class Domino:
     def partner(self) -> tuple[int, int]:
         if self.orientation == "H":
             return self.r, self.c+1
-        else: # self.orientation == "V":
-            return self.r+1, self.c
+        #else: # self.orientation == "V":
+        return self.r+1, self.c
 
-found = set()
-nfound = 0
+found = dict()
+nconsidered = 0
 
 if __name__ == "__main__":
-    b = GameBoard(2,4)
+    b = GameBoard(6,6)
     for dom1 in list(b.places()):
         boardwith1 = b.place(dom1)
         for dom2 in list(boardwith1.places()):
             boardwith2 = boardwith1.place(dom2)
             for dom3 in list(boardwith2.places()):
                 boardwith3 = boardwith2.place(dom3)
-                click.echo(f'board {boardwith3!r} characterizes to {boardwith3.characterize()}')
+                nconsidered += 1
                 if boardwith3.characterize() in found:
-                    click.echo(f'{boardwith3!r} already seen')
+                    found[(boardwith3.characterize())] += 1
+#                    click.echo(f'{boardwith3!r} now seen {found[boardwith3.characterize()]} times')
                 else:
-                    click.echo(f'\nBoard {nfound}:\n{boardwith3}')
-                    found.add(boardwith3.characterize())
-                    if boardwith3.is_tridomino():
-                        nfound += 1
-                        click.echo('FOUND A 3-DOMINO CONFIG')
-    click.echo(f'Considered a total of {len(found)} distinct boards, with {nfound} from tridominos')
+#                    click.echo(f'\nNew Board {len(found)} characterizes to {boardwith3.characterize()}:')
+#                    boardwith3.show()
+                    found[(boardwith3.characterize())] = 1
+#    click.echo(f'Found a total of {len(found)} distinct boards, after considering {nconsidered}')
+
+
+#    click.echo(f'Now reducing them to distinct shapes...')
+    distinct = set()
+    for k in found.keys():
+        b = GameBoard(0,0,stringrep = k.translate(str.maketrans('v^><', '@@@@')))
+        if b.characterize() not in distinct:
+#            b.show()
+            distinct.add(b.characterize())
+    
+#    click.echo(f'A total of {len(distinct)} tridominos')
+    click.echo('\n'.join(distinct))
