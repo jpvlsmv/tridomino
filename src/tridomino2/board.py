@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from itertools import chain, product
 from typing import Generator, Optional
 
-from parse import parse
+from parse import parse # type: ignore
 
 
 class GameBoard:
@@ -31,8 +31,8 @@ class GameBoard:
         gamecols: int = 6,
         *,
         empty: str = " ",
-        initial: Optional(str) = None,
-        stringrep: Optional(str) = None,
+        initial: Optional[str] = None,
+        stringrep: Optional[str] = None,
     ):
         if stringrep is None:
             self.gamerows = gamerows
@@ -41,7 +41,7 @@ class GameBoard:
             if initial is None:
                 self.board = [[empty for _ in range(gamecols)] for _ in range(gamerows)]
             else:
-                self.board = [[initial[i][j] for j in range(gamecols)] for i in range(gamerows)]
+                self.board = [[initial[i*gamecols+j] for j in range(gamecols)] for i in range(gamerows)]
         else:
             (r, c, bd) = parse("({:d}, {:d}, '{}')", stringrep)
             self.gamerows = r
@@ -75,7 +75,7 @@ class GameBoard:
     def __repr__(self) -> str:
         return str((self.gamerows, self.gamecols, "".join(chain(*self.board))))
 
-    def show(self) -> None:
+    def show(self) -> str:
         res = "+" + "+".join(["-" for _ in range(self.gamecols)]) + "+\n"
         for r in self.board:
             res += "|" + " ".join(r) + "|\n"
@@ -126,7 +126,7 @@ class GameBoard:
 
     def characterize(self) -> str:
         # Trim off all blank rows and columns
-        b = GameBoard(self.gamerows, self.gamecols, initial=self.board)
+        b = GameBoard(self.gamerows, self.gamecols, initial="".join(chain(*self.board)))
         while all(b.available(0, c) for c in range(b.gamecols)):
             # Remove empty row from top of board
             b.board.pop(0)
@@ -176,7 +176,7 @@ class GameBoard:
         return self._get(self.GamePos(r, c))
 
     def place(self, dom: Domino) -> GameBoard:
-        nb = GameBoard(self.gamerows, self.gamecols, initial=self.board)
+        nb = GameBoard(self.gamerows, self.gamecols, initial="".join(chain(*self.board)))
         if dom.orientation == "H":
             nb.set(dom.r, dom.c, ">")
             nb.set(dom.r, dom.c + 1, "<")

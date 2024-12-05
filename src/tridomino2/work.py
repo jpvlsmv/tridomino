@@ -4,8 +4,8 @@ import click
 
 from tridomino2.board import GameBoard
 
-found = {}
-nconsidered = 0
+found: dict[str, int] = {}
+nconsidered:int = 0
 
 if __name__ == "__main__":
     b = GameBoard(6, 6)

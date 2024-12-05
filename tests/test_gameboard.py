@@ -1,6 +1,6 @@
 import unittest
 
-from tridomino2.work import GameBoard
+from tridomino2.work import GameBoard # type: ignore
 
 
 class TestGameBoard(unittest.TestCase):
