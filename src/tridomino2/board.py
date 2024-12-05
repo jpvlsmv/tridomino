@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import chain, product
-from typing import Generator, Optional
+from typing import Generator
 
-from parse import parse # type: ignore
+from parse import parse  # type: ignore
 
 
 class GameBoard:
@@ -31,8 +31,8 @@ class GameBoard:
         gamecols: int = 6,
         *,
         empty: str = " ",
-        initial: Optional[str] = None,
-        stringrep: Optional[str] = None,
+        initial: str | None = None,
+        stringrep: str | None = None,
     ):
         if stringrep is None:
             self.gamerows = gamerows
@@ -41,7 +41,7 @@ class GameBoard:
             if initial is None:
                 self.board = [[empty for _ in range(gamecols)] for _ in range(gamerows)]
             else:
-                self.board = [[initial[i*gamecols+j] for j in range(gamecols)] for i in range(gamerows)]
+                self.board = [[initial[i * gamecols + j] for j in range(gamecols)] for i in range(gamerows)]
         else:
             (r, c, bd) = parse("({:d}, {:d}, '{}')", stringrep)
             self.gamerows = r

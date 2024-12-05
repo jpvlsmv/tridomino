@@ -4,10 +4,10 @@ import click
 
 from tridomino2.board import GameBoard
 
-found: dict[str, int] = {}
-nconsidered:int = 0
 
-if __name__ == "__main__":
+def main() -> None:
+    found: dict[str, int] = {}
+    nconsidered: int = 0
     b = GameBoard(6, 6)
     for dom1 in list(b.places()):
         boardwith1 = b.place(dom1)
@@ -31,3 +31,7 @@ if __name__ == "__main__":
 
     click.echo("\n".join(sorted(distinct)))
     click.echo(f"A total of {len(distinct)} tridominos")
+
+
+if __name__ == "__main__":
+    main()

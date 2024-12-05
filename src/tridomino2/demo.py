@@ -32,8 +32,3 @@ def demo_characterize():
     click.echo(f"characterized as {b2.characterize()!r}")
     reboard = GameBoard(0, 0, stringrep=b2.characterize())
     click.echo(reboard.show())
-
-
-if __name__ == "__main__":
-    demo_rot()
-    #demo_characterize()
