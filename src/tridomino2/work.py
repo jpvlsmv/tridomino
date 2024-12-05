@@ -8,7 +8,7 @@ found = {}
 nconsidered = 0
 
 if __name__ == "__main__":
-    b = GameBoard(6,6)
+    b = GameBoard(6, 6)
     for dom1 in list(b.places()):
         boardwith1 = b.place(dom1)
         for dom2 in list(boardwith1.places()):
@@ -23,12 +23,11 @@ if __name__ == "__main__":
                     found[(boardwith3.characterize())] = 1
     # click.echo(f'Found a total of {len(found)} distinct boards, after considering {nconsidered}')
 
-
     distinct = set()
     for k in found:
-        b = GameBoard(0,0,stringrep = k.translate(str.maketrans('v^><', '@@@@')))
+        b = GameBoard(0, 0, stringrep=k.translate(str.maketrans("v^><", "@@@@")))
         if b.characterize() not in distinct:
             distinct.add(b.characterize())
 
-    click.echo('\n'.join(sorted(distinct)))
-    click.echo(f'A total of {len(distinct)} tridominos')
+    click.echo("\n".join(sorted(distinct)))
+    click.echo(f"A total of {len(distinct)} tridominos")
