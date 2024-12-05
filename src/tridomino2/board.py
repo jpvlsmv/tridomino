@@ -47,6 +47,7 @@ class GameBoard:
             self.gamerows = r
             self.gamecols = c
             self.empty = empty
+            self.board = [[empty for _ in range(gamecols)] for _ in range(gamerows)]
             self.board = [[bd[colidx + c * rowidx] for colidx in range(c)] for rowidx in range(r)]
 
     @dataclass

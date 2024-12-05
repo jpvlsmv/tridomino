@@ -5,7 +5,7 @@ from tridomino2.work import GameBoard  # type: ignore
 
 class TestGameBoard(unittest.TestCase):
     def setUp(self):
-        self.b = GameBoard(5, 6, initial=["ABC><F", "GHIJKL", "MNOPQR", "STUVWX", "YZ0^23"])
+        self.b = GameBoard(5, 6, initial="ABC><FGHIJKLMNOPQRSTUvWXYZ0^23")
 
     def tearDown(self) -> None:
         del self.b
@@ -27,7 +27,7 @@ class TestGameBoard(unittest.TestCase):
 
     def test_rotate180(self):
         t = self.b.rotate180()
-        assert t.board[1][2] == "V"
+        assert t.board[1][2] == "^"
 
     def test_rotate270(self):
         t = self.b.rotate270()
