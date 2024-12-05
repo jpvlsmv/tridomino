@@ -1,4 +1,4 @@
-from .work import GameBoard
+from tridomino2.board import GameBoard
 
 
 def demo_rot():
