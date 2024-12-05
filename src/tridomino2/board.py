@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import chain, product
 from typing import Generator, Optional
-from pprint import pprint
 
 import click
 from parse import parse
@@ -243,11 +242,11 @@ if __name__ == "__main__":
 
 #    click.echo(f'Now reducing them to distinct shapes...')
     distinct = set()
-    for k in found.keys():
+    for k in found:
         b = GameBoard(0,0,stringrep = k.translate(str.maketrans('v^><', '@@@@')))
         if b.characterize() not in distinct:
 #            b.show()
             distinct.add(b.characterize())
-    
+
 #    click.echo(f'A total of {len(distinct)} tridominos')
     click.echo('\n'.join(distinct))

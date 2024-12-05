@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from itertools import chain, product
-from typing import Generator, Optional
-
 import click
-from parse import parse
 
 from tridomino2.board import GameBoard
 
@@ -30,10 +25,10 @@ if __name__ == "__main__":
 
 
     distinct = set()
-    for k in found.keys():
+    for k in found:
         b = GameBoard(0,0,stringrep = k.translate(str.maketrans('v^><', '@@@@')))
         if b.characterize() not in distinct:
             distinct.add(b.characterize())
-    
+
     click.echo('\n'.join(sorted(distinct)))
     click.echo(f'A total of {len(distinct)} tridominos')
