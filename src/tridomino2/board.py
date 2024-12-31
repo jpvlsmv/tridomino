@@ -13,11 +13,16 @@ class GameBoard:
     gamecols: int
     empty: str
 
+    @dataclass
+    class GamePos:
+        row: int
+        col: int
+
     def _north(self, r: int, c: int) -> tuple[int, int]:
         return r - 1, c
 
     def _south(self, r: int, c: int) -> tuple[int, int]:
-        return r - 1, c
+        return r + 1, c
 
     def _east(self, r: int, c: int) -> tuple[int, int]:
         return r, c + 1
@@ -50,25 +55,20 @@ class GameBoard:
             self.board = [[empty for _ in range(gamecols)] for _ in range(gamerows)]
             self.board = [[bd[colidx + c * rowidx] for colidx in range(c)] for rowidx in range(r)]
 
-    @dataclass
-    class GamePos:
-        row: int
-        col: int
-
-    def _available(self, p: GamePos) -> bool:
-        """available positions are non-wall places that are empty"""
-        return self.get(p.row, p.col) == self.empty
-
     def available(self, r: int, c: int) -> bool:
         """available cells are non-wall places that are empty"""
-        return self._available(self.GamePos(r, c))
+        return (self.get(r, c)== self.empty)
 
-    def _occupied(self, p: GamePos) -> bool:
-        return self.get(p.row, p.col) in ["v", "^", "<", ">"]
-
-    def occupied(self, r: int, c: int) -> bool:
+    def occupied(self, r: int, c: int, by: str = "v^><") -> bool:
         """occupied cells have either a domino or partner, (not wall)"""
-        return self._occupied(self.GamePos(r, c))
+        rv = self.get(r,c)
+        if rv in by:
+            return True
+        else:
+            return False
+
+    def is_full(self) -> bool:
+        return not any(self.available(r, c) for r, c in product(range(self.gamerows), range(self.gamecols)))
 
     def __str__(self) -> str:
         return "\n".join([(f'{"".join(r)}') for r in self.board])
@@ -166,27 +166,30 @@ class GameBoard:
             raise ValueError
         self.board[rpos][cpos] = value
 
-    def _get(self, p: GamePos) -> str | None:
+    def _get(self, p: GamePos) -> str:
         if 0 <= p.row < self.gamerows and 0 <= p.col < self.gamecols:
             # Empty or occupied
             return self.board[p.row][p.col]
         # Out of bounds, return wall
         return "*"
 
-    def get(self, r: int, c: int) -> str | None:
+    def get(self, r: int, c: int) -> str:
         return self._get(self.GamePos(r, c))
 
-    def place(self, dom: Domino) -> GameBoard:
+    def place(self, dom: Domino, value: str | None = None) -> GameBoard:
+        marks = "><v^"
         nb = GameBoard(self.gamerows, self.gamecols, initial="".join(chain(*self.board)))
+        if value is not None:
+            marks = value * 4
         if dom.orientation == "H":
-            nb.set(dom.r, dom.c, ">")
-            nb.set(dom.r, dom.c + 1, "<")
+            nb.set(dom.r, dom.c, marks[0])
+            nb.set(dom.r, dom.c + 1, marks[1])
         else:  # if dom.orientation == "V":
-            nb.set(dom.r, dom.c, "v")
-            nb.set(dom.r + 1, dom.c, "^")
+            nb.set(dom.r, dom.c, marks[2])
+            nb.set(dom.r + 1, dom.c, marks[3])
         return nb
 
-    def places(self) -> Generator:
+    def places(self, marker="v^><") -> Generator:
         blankboard = all(self.get(r, c) == self.empty for r, c in product(range(self.gamerows), range(self.gamecols)))
         for row, col, o in product(range(self.gamerows), range(self.gamecols), ["H", "V"]):
             d = Domino(row, col, o)
@@ -196,19 +199,30 @@ class GameBoard:
             if not (self.available(d.r, d.c) and self.available(pr, pc)):
                 continue
 
-            if blankboard or self._connected(d):
+            if blankboard or self._connected(d, to=marker):
                 yield d
 
-    def _connected(self, d: Domino) -> bool:
+    def _connected(self, d: Domino, to: str) -> bool:
         "Returns True if domino d could be added to non-empty board b"
         pr, pc = d.partner()
         if not self.available(d.r, d.c) or not self.available(pr, pc):
             return False
-        if (
-            (self.occupied(*self._north(d.r, d.c)) or self.occupied(*self._north(pr, pc)))
-            or (self.occupied(*self._south(d.r, d.c)) or self.occupied(*self._south(pr, pc)))
-            or (self.occupied(*self._east(d.r, d.c)) or self.occupied(*self._east(pr, pc)))
-            or (self.occupied(*self._west(d.r, d.c)) or self.occupied(*self._west(pr, pc)))
+        if d.orientation == "H" and (
+            self.occupied(*self._north(d.r, d.c), by=to)
+            or self.occupied(*self._north(pr, pc), by=to)
+            or self.occupied(*self._south(d.r, d.c), by=to)
+            or self.occupied(*self._south(pr, pc), by=to)
+            or self.occupied(*self._west(d.r, d.c), by=to)
+            or self.occupied(*self._east(pr, pc), by=to)
+        ):
+            return True
+        if d.orientation == "V" and (
+            self.occupied(*self._north(d.r, d.c), by=to)
+            or self.occupied(*self._south(pr, pc), by=to)
+            or self.occupied(*self._east(d.r, d.c), by=to)
+            or self.occupied(*self._east(pr, pc), by=to)
+            or self.occupied(*self._west(d.r, d.c), by=to)
+            or self.occupied(*self._west(pr, pc), by=to)
         ):
             return True
         return False

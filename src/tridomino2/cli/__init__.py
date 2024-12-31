@@ -31,3 +31,10 @@ def work():
     from tridomino2.work import main as d
 
     d()
+
+
+@tridomino2.command()
+def search():
+    from tridomino2.search import main as do_search
+
+    do_search()
